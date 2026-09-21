@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Конвертер валют і одиниць</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,23 +15,23 @@
 
   <main>
 
-    <section id="type">
+    <section id="type" class="panel">
       <h2>Вибір типу конвертації</h2>
       <form id="type-form">
         <fieldset>
           <legend>Тип величини</legend>
 
-          <div>
+          <div class="radio-option">
             <input type="radio" id="type-currency" name="conversion-type" value="currency" checked>
             <label for="type-currency">Валюта</label>
           </div>
 
-          <div>
+          <div class="radio-option">
             <input type="radio" id="type-length" name="conversion-type" value="length">
             <label for="type-length">Довжина</label>
           </div>
 
-          <div>
+          <div class="radio-option">
             <input type="radio" id="type-weight" name="conversion-type" value="weight">
             <label for="type-weight">Вага</label>
           </div>
@@ -39,16 +40,16 @@
       </form>
     </section>
 
-    <section id="converter">
+    <section id="converter" class="panel">
       <h2>Форма конвертації</h2>
       <form id="converter-form">
 
-        <div>
+        <div class="field">
           <label for="amount">Значення</label>
           <input type="number" id="amount" name="amount" step="any" min="0" placeholder="0">
         </div>
 
-        <div>
+        <div class="field">
           <label for="unit-from">Конвертувати з</label>
           <select id="unit-from" name="unit-from">
             <option value="uah">Гривня (UAH)</option>
@@ -57,7 +58,7 @@
           </select>
         </div>
 
-        <div>
+        <div class="field">
           <label for="unit-to">Конвертувати у</label>
           <select id="unit-to" name="unit-to">
             <option value="usd">Долар США (USD)</option>
@@ -67,13 +68,13 @@
         </div>
 
         <div>
-          <button type="submit">Конвертувати</button>
+          <button type="submit" class="btn">Конвертувати</button>
         </div>
 
       </form>
     </section>
 
-    <section id="result">
+    <section id="result" class="panel">
       <h2>Результат</h2>
       <p id="result-value">Результат конвертації з'явиться після введення значення.</p>
     </section>
