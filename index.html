@@ -3,21 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Конвертер валют і одиниць виміру: валюта, довжина, вага">
   <title>Конвертер валют і одиниць</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- ===== 1. Шапка: назва застосунку ===== -->
+  <header>
+    <h1>Конвертер валют і одиниць</h1>
+  </header>
 
-  <!-- ===== 2. Блок вибору типу конвертації: валюта / довжина / вага ===== -->
+  <main>
 
-  <!-- ===== 3. Форма введення: значення, одиниця "з", одиниця "у", кнопка "Конвертувати" ===== -->
+    <section id="type">
+      <h2>Вибір типу конвертації</h2>
+      <form id="type-form">
+        <fieldset>
+          <legend>Тип величини</legend>
 
-  <!-- ===== 4. Блок результату конвертації ===== -->
+          <div>
+            <input type="radio" id="type-currency" name="conversion-type" value="currency" checked>
+            <label for="type-currency">Валюта</label>
+          </div>
 
-  <!-- ===== 5. Підвал: джерело курсів валют, рік ===== -->
+          <div>
+            <input type="radio" id="type-length" name="conversion-type" value="length">
+            <label for="type-length">Довжина</label>
+          </div>
+
+          <div>
+            <input type="radio" id="type-weight" name="conversion-type" value="weight">
+            <label for="type-weight">Вага</label>
+          </div>
+
+        </fieldset>
+      </form>
+    </section>
+
+    <section id="converter">
+      <h2>Форма конвертації</h2>
+      <form id="converter-form">
+
+        <div>
+          <label for="amount">Значення</label>
+          <input type="number" id="amount" name="amount" step="any" min="0" placeholder="0">
+        </div>
+
+        <div>
+          <label for="unit-from">Конвертувати з</label>
+          <select id="unit-from" name="unit-from">
+            <option value="uah">Гривня (UAH)</option>
+            <option value="usd">Долар США (USD)</option>
+            <option value="eur">Євро (EUR)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="unit-to">Конвертувати у</label>
+          <select id="unit-to" name="unit-to">
+            <option value="usd">Долар США (USD)</option>
+            <option value="uah">Гривня (UAH)</option>
+            <option value="eur">Євро (EUR)</option>
+          </select>
+        </div>
+
+        <div>
+          <button type="submit">Конвертувати</button>
+        </div>
+
+      </form>
+    </section>
+
+    <section id="result">
+      <h2>Результат</h2>
+      <p id="result-value">Результат конвертації з'явиться після введення значення.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Курси валют і коефіцієнти переведення наведено орієнтовно. Навчальний проєкт, 2026.</p>
+  </footer>
 
   <script src="js/app.js"></script>
 </body>
