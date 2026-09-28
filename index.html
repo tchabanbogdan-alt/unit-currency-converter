@@ -21,21 +21,24 @@
         <fieldset>
           <legend>Тип величини</legend>
 
-          <div class="radio-option">
-            <input type="radio" id="type-currency" name="conversion-type" value="currency" checked>
-            <label for="type-currency">Валюта</label>
-          </div>
+          <div class="type-options">
 
-          <div class="radio-option">
-            <input type="radio" id="type-length" name="conversion-type" value="length">
-            <label for="type-length">Довжина</label>
-          </div>
+            <div class="radio-option">
+              <input type="radio" id="type-currency" name="conversion-type" value="currency" checked>
+              <label for="type-currency">Валюта</label>
+            </div>
 
-          <div class="radio-option">
-            <input type="radio" id="type-weight" name="conversion-type" value="weight">
-            <label for="type-weight">Вага</label>
-          </div>
+            <div class="radio-option">
+              <input type="radio" id="type-length" name="conversion-type" value="length">
+              <label for="type-length">Довжина</label>
+            </div>
 
+            <div class="radio-option">
+              <input type="radio" id="type-weight" name="conversion-type" value="weight">
+              <label for="type-weight">Вага</label>
+            </div>
+
+          </div>
         </fieldset>
       </form>
     </section>
@@ -49,22 +52,28 @@
           <input type="number" id="amount" name="amount" step="any" min="0" placeholder="0">
         </div>
 
-        <div class="field">
-          <label for="unit-from">Конвертувати з</label>
-          <select id="unit-from" name="unit-from">
-            <option value="uah">Гривня (UAH)</option>
-            <option value="usd">Долар США (USD)</option>
-            <option value="eur">Євро (EUR)</option>
-          </select>
-        </div>
+        <div class="units">
 
-        <div class="field">
-          <label for="unit-to">Конвертувати у</label>
-          <select id="unit-to" name="unit-to">
-            <option value="usd">Долар США (USD)</option>
-            <option value="uah">Гривня (UAH)</option>
-            <option value="eur">Євро (EUR)</option>
-          </select>
+          <div class="field">
+            <label for="unit-from">Конвертувати з</label>
+            <select id="unit-from" name="unit-from">
+              <option value="uah">Гривня (UAH)</option>
+              <option value="usd">Долар США (USD)</option>
+              <option value="eur">Євро (EUR)</option>
+            </select>
+          </div>
+
+          <button type="button" class="swap" id="swap-units" title="Поміняти одиниці місцями">&#8646;</button>
+
+          <div class="field">
+            <label for="unit-to">Конвертувати у</label>
+            <select id="unit-to" name="unit-to">
+              <option value="usd">Долар США (USD)</option>
+              <option value="uah">Гривня (UAH)</option>
+              <option value="eur">Євро (EUR)</option>
+            </select>
+          </div>
+
         </div>
 
         <div>

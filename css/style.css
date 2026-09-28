@@ -14,30 +14,41 @@ body {
   background-color: #eef1f4;
 }
 
-/* ===== Шапка ===== */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ===== Шапка (Flexbox) ===== */
 header {
-  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 16px;
   background-color: #ffffff;
   border-bottom: 3px solid #1f6feb;
-  text-align: center;
 }
 
 header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #1f6feb;
+  text-align: center;
 }
 
-/* ===== Основний вміст ===== */
+/* ===== Основний вміст (Grid) ===== */
 main {
+  display: grid;
+  gap: 16px;
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 16px;
 }
 
 .panel {
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  padding: 16px;
   background-color: #ffffff;
   border: 1px solid #d5dbe3;
   border-radius: 8px;
@@ -62,9 +73,10 @@ legend {
   color: #5f6b7a;
 }
 
-.radio-option {
-  display: inline-block;
-  margin-right: 20px;
+.type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
 }
 
 .radio-option label {
@@ -72,8 +84,10 @@ legend {
 }
 
 /* ===== Форма конвертації ===== */
-.field {
-  margin-bottom: 16px;
+#converter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .field label {
@@ -99,6 +113,28 @@ legend {
   border-color: #1f6feb;
   outline: none;
   box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.25);
+}
+
+/* Поля "з" і "у" — мобільний варіант: стовпчик */
+.units {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.swap {
+  align-self: center;
+  padding: 8px 16px;
+  font-size: 1.1rem;
+  color: #1f6feb;
+  background-color: #ffffff;
+  border: 1px solid #1f6feb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.swap:hover {
+  background-color: #e8f0fe;
 }
 
 /* ===== Кнопка ===== */
@@ -139,4 +175,59 @@ footer {
 
 footer p {
   margin: 0;
+}
+
+/* ===== Планшет ===== */
+@media (min-width: 600px) {
+  header h1 {
+    font-size: 2rem;
+  }
+
+  main {
+    gap: 20px;
+    padding: 24px 16px;
+  }
+
+  .panel {
+    padding: 20px 24px;
+  }
+
+  .units {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .units .field {
+    flex: 1;
+  }
+
+  .swap {
+    align-self: flex-end;
+  }
+}
+
+/* ===== Десктоп ===== */
+@media (min-width: 1024px) {
+  header {
+    padding: 32px 24px;
+  }
+
+  header h1 {
+    font-size: 2.5rem;
+  }
+
+  main {
+    gap: 28px;
+    max-width: 860px;
+    padding: 40px 24px;
+  }
+
+  .panel {
+    padding: 28px 32px;
+  }
+
+  #converter-form {
+    gap: 24px;
+  }
 }
