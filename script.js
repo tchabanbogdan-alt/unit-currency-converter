@@ -1,9 +1,11 @@
 /*
   Конвертер валют і одиниць виміру — клієнтський скрипт
-  Практикум 6: основи JavaScript — змінні, умови, цикли, функції
+  Практикум 7: маніпуляція DOM за допомогою JavaScript
 */
 
 console.log('script.js підключено');
+
+/* ===== Дані (практикум 6) ===== */
 
 // Курси валют відносно долара США: 1 USD = rates[код]
 const rates = { USD: 1, EUR: 0.92, UAH: 41.5 };
@@ -11,28 +13,59 @@ const rates = { USD: 1, EUR: 0.92, UAH: 41.5 };
 // Поріг, вище якого результат конвертації вважається великою сумою
 const LARGE_AMOUNT = 1000;
 
+// Поріг, вище якого курс позначається класом big-rate
+const BIG_RATE = 10;
+
 // Сума в доларах, яку конвертуємо для перевірки роботи скрипта
 const sourceAmount = 50;
 
-// Виводить у консоль усі курси з об'єкта і повертає їх кількість
-function showRates(ratesObject) {
-  let count = 0;
+/* ===== Елементи сторінки ===== */
 
-  console.log('Курси валют (за 1 USD):');
+const ratesList = document.querySelector('#rates-list');
+const ratesCount = document.querySelector('#rates-count');
 
-  for (const code of Object.keys(ratesObject)) {
-    console.log(`${code}: ${ratesObject[code]}`);
-    count += 1;
-  }
-
-  return count;
-}
+/* ===== Функції ===== */
 
 // Переводить суму за заданим курсом
 const convert = (amount, rate) => amount * rate;
 
-const ratesCount = showRates(rates);
-console.log(`Усього курсів у довіднику: ${ratesCount}`);
+// Будує список курсів у контейнері #rates-list
+function renderRates(ratesObject) {
+  ratesList.innerHTML = '';
+
+  for (const [code, rate] of Object.entries(ratesObject)) {
+    const item = document.createElement('li');
+
+    item.textContent = `${code}: ${rate}`;
+    item.classList.add('rate-item');
+    item.dataset.rate = rate;
+
+    // Курс вище порогу позначаємо окремим класом
+    if (rate > BIG_RATE) {
+      item.classList.add('big-rate');
+    }
+
+    ratesList.append(item);
+  }
+}
+
+// Оновлює підсумковий рядок під списком курсів
+function updateRatesCount(ratesObject) {
+  const total = Object.keys(ratesObject).length;
+  ratesCount.textContent = `Валют у списку: ${total}`;
+}
+
+/* ===== Виконання ===== */
+
+// Прибираємо статичний приклад, що лишився в розмітці з практикуму 2
+const staticItem = document.querySelector('#rates-list .rate-item');
+
+if (staticItem) {
+  staticItem.remove();
+}
+
+renderRates(rates);
+updateRatesCount(rates);
 
 const converted = convert(sourceAmount, rates.UAH);
 console.log(`${sourceAmount} USD = ${converted} UAH`);

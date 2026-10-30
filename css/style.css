@@ -288,4 +288,35 @@ footer p {
   #converter-form {
     gap: 24px;
   }
+  
+}
+
+/* ===== Список курсів валют (практикум 7) ===== */
+#rates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.rate-item {
+  padding: 10px 14px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 8px;
+}
+
+/* Курс, вищий за поріг */
+.big-rate {
+  font-weight: 600;
+  background-color: var(--color-bg-accent);
+  border-left: 4px solid var(--color-accent);
+}
+
+#rates-count {
+  margin: 0;
+  font-size: var(--size-small);
+  color: var(--color-text-muted);
 }
