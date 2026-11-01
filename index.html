@@ -53,7 +53,7 @@
 
         <div class="field">
           <label for="amount">Значення</label>
-          <input type="number" id="amount" name="amount" step="any" min="0" placeholder="0">
+          <input type="number" id="amount" name="amount" step="any" min="0.01" placeholder="0" required>
         </div>
 
         <div class="units">
@@ -90,6 +90,12 @@
     <section id="result" class="panel">
       <h2>Результат</h2>
       <p id="result-value">Результат конвертації з'явиться після введення значення.</p>
+    </section>
+
+    <section id="history" class="panel">
+      <h2>Історія конвертацій</h2>
+      <ul id="history-list"></ul>
+      <p id="history-empty">Історія порожня — виконайте першу конвертацію.</p>
     </section>
 
     <section id="rates" class="panel">
