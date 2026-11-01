@@ -1,12 +1,20 @@
 /*
   Конвертер валют і одиниць виміру — клієнтський скрипт
-  Практикум 8: обробка подій та форми, клієнтська валідація
+  Практикум 9: клієнт для відомого API (fetch/AJAX)
 */
+
+/* ===== Налаштування запиту ===== */
+
+// Курси беремо з відкритого API Frankfurter, джерело даних — Національний банк України
+const API_URL = 'https://api.frankfurter.dev/v2/providers/nbu/rates';
+
+// Валюти, які показує застосунок (у відповіді їх значно більше)
+const CURRENCIES = ['USD', 'EUR', 'UAH'];
 
 /* ===== Дані ===== */
 
-// Курси валют відносно долара США: 1 USD = rates[код]
-const rates = { USD: 1, EUR: 0.92, UAH: 41.5 };
+// Резервні курси: показуються, доки триває запит або якщо API недоступний
+let rates = { EUR: 1, USD: 1.11, UAH: 50.5 };
 
 // Поріг, вище якого курс позначається класом big-rate
 const BIG_RATE = 10;
@@ -18,6 +26,9 @@ const history = [];
 
 const ratesList = document.querySelector('#rates-list');
 const ratesCount = document.querySelector('#rates-count');
+const ratesStatus = document.querySelector('#rates-status');
+const ratesError = document.querySelector('#rates-error');
+const reloadButton = document.querySelector('#reload-rates');
 
 const form = document.querySelector('#converter-form');
 const amountInput = document.querySelector('#amount');
@@ -39,10 +50,27 @@ const round2 = (value) => Math.round(value * 100) / 100;
 // Переводить суму за заданим курсом
 const convert = (amount, rate) => amount * rate;
 
-// Переводить суму з однієї валюти в іншу через курс до долара
+// Переводить суму з однієї валюти в іншу через курс до базової
 function convertCurrency(amount, from, to) {
   const inUsd = amount / rates[from];
   return convert(inUsd, rates[to]);
+}
+
+// Показує або ховає ознаку завантаження
+function showLoading(isLoading) {
+  ratesStatus.hidden = !isLoading;
+  reloadButton.disabled = isLoading;
+}
+
+// Виводить зрозуміле повідомлення про помилку окремим елементом
+function showError(message) {
+  ratesError.textContent = message;
+  ratesError.hidden = false;
+}
+
+// Ховає попереднє повідомлення про помилку
+function hideError() {
+  ratesError.hidden = true;
 }
 
 // Будує список курсів у контейнері #rates-list
@@ -52,7 +80,7 @@ function renderRates(ratesObject) {
   for (const [code, rate] of Object.entries(ratesObject)) {
     const item = document.createElement('li');
 
-    item.textContent = `${code}: ${rate}`;
+    item.textContent = `${code}: ${round2(rate)}`;
     item.classList.add('rate-item');
     item.dataset.rate = rate;
 
@@ -66,9 +94,12 @@ function renderRates(ratesObject) {
 }
 
 // Оновлює підсумковий рядок під списком курсів
-function updateRatesCount(ratesObject) {
+function updateRatesCount(ratesObject, date) {
   const total = Object.keys(ratesObject).length;
-  ratesCount.textContent = `Валют у списку: ${total}`;
+
+  ratesCount.textContent = date
+    ? `Валют у списку: ${total} · дані за ${date}`
+    : `Валют у списку: ${total}`;
 }
 
 // Перераховує поточне значення форми й оновлює блок результату
@@ -102,6 +133,61 @@ function renderHistory(items) {
   historyEmpty.hidden = items.length > 0;
 }
 
+// Завантажує актуальні курси валют з API Frankfurter (https://frankfurter.dev)
+async function loadRates() {
+  showLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(API_URL);
+
+    // fetch не вважає 404 чи 422 помилкою, тому статус перевіряємо вручну
+    if (!response.ok) {
+      if (response.status === 422) {
+        throw new Error('Перевірте код валюти: сервер не підтримує одну з них.');
+      }
+
+      throw new Error(`Сервер відповів кодом ${response.status}.`);
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error('Сервер повернув порожній перелік курсів.');
+    }
+
+    // Відповідь — масив записів { date, base, quote, rate }, тому збираємо з них об'єкт курсів
+    const loaded = {};
+    const base = data[0].base;
+    const date = data[0].date;
+
+    // Базова валюта у відповідь не входить — її курс до себе завжди 1
+    loaded[base] = 1;
+
+    for (const entry of data) {
+      if (CURRENCIES.includes(entry.quote)) {
+        loaded[entry.quote] = entry.rate;
+      }
+    }
+
+    rates = loaded;
+
+    renderRates(rates);
+    updateRatesCount(rates, date);
+    showResult();
+  } catch (error) {
+    // Мережевий збій fetch повертає як TypeError — для нього окреме повідомлення
+    const message = error instanceof TypeError
+      ? 'Немає з\'єднання з мережею. Показано збережені курси.'
+      : error.message;
+
+    showError(message);
+    console.error(error);
+  } finally {
+    showLoading(false);
+  }
+}
+
 /* ===== Обробники подій ===== */
 
 // Власна перевірка суми під час введення
@@ -129,6 +215,9 @@ swapButton.addEventListener('click', () => {
   showResult();
 });
 
+// Кнопка «Оновити курси» повторює запит без перезавантаження сторінки
+reloadButton.addEventListener('click', loadRates);
+
 // Надсилання форми додає запис до історії конвертацій
 form.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -152,3 +241,4 @@ form.addEventListener('submit', (event) => {
 renderRates(rates);
 updateRatesCount(rates);
 renderHistory(history);
+loadRates();

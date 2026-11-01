@@ -347,3 +347,44 @@ footer p {
   font-size: var(--size-small);
   color: var(--color-text-muted);
 }
+
+/* ===== Стан завантаження й помилки (практикум 9) ===== */
+#rates-status {
+  margin: 0 0 12px;
+  font-size: var(--size-small);
+  color: var(--color-text-muted);
+}
+
+#rates-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  font-size: var(--size-small);
+  color: #7A1F1F;
+  background-color: #FBF0F0;
+  border-left: 4px solid #A32C2C;
+  border-radius: 6px;
+}
+
+.btn-secondary {
+  height: var(--control-height);
+  margin-top: 14px;
+  padding: 0 20px;
+  font-family: inherit;
+  font-size: var(--size-small);
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #E7EEF5;
+}
+
+.btn-secondary:disabled {
+  color: var(--color-text-muted);
+  border-color: var(--color-border-soft);
+  cursor: default;
+}

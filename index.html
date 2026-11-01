@@ -100,10 +100,11 @@
 
     <section id="rates" class="panel">
       <h2>Курси валют</h2>
-      <ul id="rates-list">
-        <li class="rate-item">USD: 1</li>
-      </ul>
+      <p id="rates-status">Завантаження курсів…</p>
+      <p id="rates-error" hidden></p>
+      <ul id="rates-list"></ul>
       <p id="rates-count">Валют у списку: —</p>
+      <button type="button" class="btn-secondary" id="reload-rates">Оновити курси</button>
     </section>
 
   </main>
