@@ -1,6 +1,6 @@
 /*
   Конвертер валют і одиниць виміру — клієнтський скрипт
-  Практикум 11: локальні сховища даних (localStorage / IndexedDB)
+  Практикум 12: анімований міні-графік історії на Canvas
 
   Фреймворк — Vue 3 (практикум 10): шаблони пишуться звичайним HTML
   і підключаються одним CDN-тегом, без збірки та Node.js.
@@ -9,6 +9,11 @@
   основне сховище — IndexedDB (об'єктне сховище history, ключ id
   з автоінкрементом), localStorage лишається для одноразової міграції
   вже накопичених даних і як резерв, якщо база недоступна.
+
+  Результати конвертацій з історії додатково показано у вигляді ламаної
+  лінії на полотні <canvas>. Лінія промальовується покадрово через
+  requestAnimationFrame і перезапускається щоразу, коли в історії
+  з'являється або зникає запис.
 */
 
 /* ===== Налаштування запиту ===== */
@@ -342,10 +347,259 @@ const HistoryList = {
   `
 };
 
+/* ===== Компонент міні-графіка історії (практикум 12) ===== */
+
+// Скільки останніх конвертацій показує графік
+const CHART_POINTS = 8;
+
+// Тривалість промальовування лінії, мс
+const CHART_DURATION = 900;
+
+// Відступи всередині полотна: ліворуч — під підписи значень, знизу — під номери
+const CHART_PADDING = { left: 46, right: 16, top: 18, bottom: 28 };
+
+const HistoryChart = {
+  props: ['items'],
+
+  data() {
+    return {
+      ctx: null,         // двовимірний контекст малювання
+      animationId: 0,    // ідентифікатор замовленого кадру
+      startTime: 0,      // мітка часу першого кадру анімації
+      progress: 1,       // яка частка лінії намальована: 0 — нічого, 1 — весь графік
+      running: false     // чи триває цикл анімації просто зараз
+    };
+  },
+
+  computed: {
+    // Точки графіка — реальні результати з історії (IndexedDB, практикум 11),
+    // а не захардкоджені числа. Записи приходять найновішими згори,
+    // тому масив розвертаємо: на графіку час іде зліва направо
+    points() {
+      return [...this.items]
+        .slice(0, CHART_POINTS)
+        .reverse()
+        .map((item) => Number(item.result))
+        .filter((value) => Number.isFinite(value));
+    }
+  },
+
+  watch: {
+    // Анімація прив'язана до даних застосунку: щойно користувач додає
+    // або видаляє запис історії, лінія перемальовується наново
+    points() {
+      this.restart();
+    }
+  },
+
+  mounted() {
+    // Контекст отримуємо один раз після того, як полотно потрапило в DOM
+    this.ctx = this.$refs.canvas.getContext('2d');
+    this.restart();
+  },
+
+  // Якщо компонент прибрано зі сторінки, цикл обов'язково зупиняємо:
+  // інакше браузер і далі викликав би кадри вже для неіснуючого полотна
+  unmounted() {
+    this.stop();
+  },
+
+  methods: {
+    // Запускає цикл анімації з нуля
+    restart() {
+      if (!this.ctx) return;
+
+      this.stop();
+      this.progress = 0;
+      this.startTime = 0;
+      this.running = true;
+      this.animationId = requestAnimationFrame(this.step);
+    },
+
+    // Один кадр анімації: оновити стан, стерти попередній кадр, перемалювати.
+    // requestAnimationFrame сам передає функції мітку часу, тому швидкість
+    // анімації не залежить від частоти оновлення екрана
+    step(timestamp) {
+      if (!this.startTime) this.startTime = timestamp;
+
+      this.progress = Math.min((timestamp - this.startTime) / CHART_DURATION, 1);
+      this.draw();
+
+      if (this.progress < 1) {
+        this.animationId = requestAnimationFrame(this.step);
+      } else {
+        // Лінія домальована — наступний кадр не замовляємо, тому цикл
+        // не крутиться вхолосту й не навантажує сторінку
+        this.animationId = 0;
+        this.running = false;
+      }
+    },
+
+    // Зупиняє цикл: без cancelAnimationFrame уже замовлений кадр
+    // усе одно виконався б і анімація продовжилася б попри зупинку
+    stop() {
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+
+      this.animationId = 0;
+      this.running = false;
+    },
+
+    // Кнопка керування: під час анімації зупиняє її і показує графік
+    // повністю, у стані спокою — програє анімацію наново
+    toggle() {
+      if (this.running) {
+        this.stop();
+        this.progress = 1;
+        this.draw();
+      } else {
+        this.restart();
+      }
+    },
+
+    // Малює поточний стан графіка на полотні
+    draw() {
+      const canvas = this.$refs.canvas;
+      const ctx = this.ctx;
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Очищення перед кожним кадром обов'язкове: інакше нова лінія
+      // накладається на попередню й зображення «змазується»
+      ctx.clearRect(0, 0, width, height);
+
+      const values = this.points;
+
+      // Поки конвертацій менше двох, лінію будувати нема з чого
+      if (values.length < 2) {
+        ctx.fillStyle = '#5A6878';
+        ctx.font = '14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Виконайте щонайменше дві конвертації', width / 2, height / 2);
+
+        return;
+      }
+
+      const plotWidth = width - CHART_PADDING.left - CHART_PADDING.right;
+      const plotHeight = height - CHART_PADDING.top - CHART_PADDING.bottom;
+
+      // Межі шкали беремо з самих даних
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+
+      if (max === min) {
+        // Усі значення однакові — розсуваємо шкалу, щоб лінія не злилася з віссю
+        max = min + 1;
+        min = Math.max(0, min - 1);
+      }
+
+      // Переведення значення конвертації в координати полотна
+      const xOf = (index) => CHART_PADDING.left + (plotWidth * index) / (values.length - 1);
+      const yOf = (value) =>
+        CHART_PADDING.top + plotHeight - (plotHeight * (value - min)) / (max - min);
+
+      // Сітка з трьох ліній і підписи шкали значень
+      ctx.strokeStyle = '#D9E0E6';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#5A6878';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'right';
+
+      for (let i = 0; i <= 2; i++) {
+        const value = min + ((max - min) * i) / 2;
+        const y = yOf(value);
+
+        ctx.beginPath();
+        ctx.moveTo(CHART_PADDING.left, y);
+        ctx.lineTo(width - CHART_PADDING.right, y);
+        ctx.stroke();
+        ctx.fillText(round2(value), CHART_PADDING.left - 8, y + 4);
+      }
+
+      // Номери конвертацій по горизонталі
+      ctx.textAlign = 'center';
+
+      values.forEach((value, index) => {
+        ctx.fillText(String(index + 1), xOf(index), height - 9);
+      });
+
+      // Скільки точок уже «доросло» до поточного кадру
+      const visible = 1 + (values.length - 1) * this.progress;
+
+      // Ламана лінія: цілі відрізки плюс незавершений хвіст.
+      // Координати кінця лінії запам'ятовуємо — на ньому малюється «голова»
+      let headX = xOf(0);
+      let headY = yOf(values[0]);
+
+      ctx.strokeStyle = '#0F3D6E';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(headX, headY);
+
+      for (let i = 1; i < values.length; i++) {
+        if (i <= visible) {
+          headX = xOf(i);
+          headY = yOf(values[i]);
+          ctx.lineTo(headX, headY);
+          continue;
+        }
+
+        // Частковий відрізок — точка між попередньою та наступною вершиною
+        const part = visible - (i - 1);
+
+        headX = xOf(i - 1) + (xOf(i) - xOf(i - 1)) * part;
+        headY = yOf(values[i - 1]) + (yOf(values[i]) - yOf(values[i - 1])) * part;
+        ctx.lineTo(headX, headY);
+        break;
+      }
+
+      ctx.stroke();
+
+      // Маркери вершин з'являються разом із лінією
+      ctx.fillStyle = '#0F3D6E';
+
+      values.forEach((value, index) => {
+        if (index + 1 > visible) return;
+
+        ctx.beginPath();
+        ctx.arc(xOf(index), yOf(value), 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // «Голова» лінії — кружечок, що росте на кінці намальованої частини.
+      // save() і restore() навколо translate/scale повертають систему
+      // координат у вихідний стан, щоб трансформація не вплинула на наступний кадр
+      if (this.progress < 1) {
+        ctx.save();
+        ctx.translate(headX, headY);
+        ctx.scale(1 + this.progress, 1 + this.progress);
+        ctx.fillStyle = '#1B6B4A';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  },
+
+  template: `
+    <div>
+      <canvas ref="canvas" id="history-chart" width="600" height="220"
+              role="img" aria-label="Графік останніх результатів конвертації"></canvas>
+
+      <div class="chart-controls">
+        <button type="button" class="btn-secondary" @click="toggle">
+          {{ running ? 'Зупинити анімацію' : 'Програти анімацію' }}
+        </button>
+        <span class="chart-note">Точок на графіку: {{ points.length }}</span>
+      </div>
+    </div>
+  `
+};
+
 /* ===== Кореневий застосунок ===== */
 
 Vue.createApp({
-  components: { ConverterForm, RatesList, HistoryList },
+  components: { ConverterForm, RatesList, HistoryList, HistoryChart },
 
   data() {
     return {
