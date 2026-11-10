@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- Vue 3, глобальна збірка з CDN: без Node.js і без збірки проєкту -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="script.js" defer></script>
 </head>
 <body>
@@ -17,94 +20,45 @@
     <h1>Конвертер валют і одиниць</h1>
   </header>
 
-  <main>
+  <!-- Кореневий елемент Vue-застосунку -->
+  <main id="app">
 
     <section id="type" class="panel">
       <h2>Вибір типу конвертації</h2>
-      <form id="type-form">
-        <fieldset>
-          <legend>Тип величини</legend>
+      <fieldset>
+        <legend>Тип величини</legend>
 
-          <div class="type-options">
-
-            <div class="radio-option">
-              <input type="radio" id="type-currency" name="conversion-type" value="currency" checked>
-              <label for="type-currency">Валюта</label>
-            </div>
-
-            <div class="radio-option">
-              <input type="radio" id="type-length" name="conversion-type" value="length">
-              <label for="type-length">Довжина</label>
-            </div>
-
-            <div class="radio-option">
-              <input type="radio" id="type-weight" name="conversion-type" value="weight">
-              <label for="type-weight">Вага</label>
-            </div>
-
+        <div class="type-options">
+          <div class="radio-option" v-for="type in conversionTypes" :key="type.value">
+            <input type="radio" :id="'type-' + type.value" name="conversion-type"
+                   :value="type.value" v-model="conversionType">
+            <label :for="'type-' + type.value">{{ type.label }}</label>
           </div>
-        </fieldset>
-      </form>
+        </div>
+      </fieldset>
     </section>
 
     <section id="converter" class="panel">
       <h2>Форма конвертації</h2>
-      <form id="converter-form">
-
-        <div class="field">
-          <label for="amount">Значення</label>
-          <input type="number" id="amount" name="amount" step="any" min="0.01" placeholder="0" required>
-        </div>
-
-        <div class="units">
-
-          <div class="field">
-            <label for="unit-from">Конвертувати з</label>
-            <select id="unit-from" name="unit-from">
-              <option value="uah">Гривня (UAH)</option>
-              <option value="usd">Долар США (USD)</option>
-              <option value="eur">Євро (EUR)</option>
-            </select>
-          </div>
-
-          <button type="button" class="swap" id="swap-units" title="Поміняти одиниці місцями">&#8646;</button>
-
-          <div class="field">
-            <label for="unit-to">Конвертувати у</label>
-            <select id="unit-to" name="unit-to">
-              <option value="usd">Долар США (USD)</option>
-              <option value="uah">Гривня (UAH)</option>
-              <option value="eur">Євро (EUR)</option>
-            </select>
-          </div>
-
-        </div>
-
-        <div>
-          <button type="submit" class="btn">Конвертувати</button>
-        </div>
-
-      </form>
-    </section>
-
-    <section id="result" class="panel">
-      <h2>Результат</h2>
-      <p id="result-value">Результат конвертації з'явиться після введення значення.</p>
+      <converter-form :rates="rates" :units="units" @save="addToHistory"></converter-form>
     </section>
 
     <section id="history" class="panel">
       <h2>Історія конвертацій</h2>
-      <ul id="history-list"></ul>
-      <p id="history-empty">Історія порожня — виконайте першу конвертацію.</p>
+      <history-list :items="history"></history-list>
     </section>
 
     <section id="rates" class="panel">
       <h2>Курси валют</h2>
-      <p id="rates-status">Завантаження курсів…</p>
-      <p id="rates-error" hidden></p>
-      <ul id="rates-list"></ul>
-      <p id="rates-count">Валют у списку: —</p>
-      <button type="button" class="btn-secondary" id="reload-rates">Оновити курси</button>
+
+      <p v-if="loading" id="rates-status">Завантаження курсів…</p>
+      <p v-if="errorMessage" id="rates-error">{{ errorMessage }}</p>
+
+      <rates-list :rates="rates" :date="ratesDate"></rates-list>
+
+      <button type="button" class="btn-secondary" @click="loadRates" :disabled="loading">
+        Оновити курси
+      </button>
     </section>
 
   </main>
