@@ -1,10 +1,14 @@
 /*
   Конвертер валют і одиниць виміру — клієнтський скрипт
-  Практикум 10: клієнтське програмування з бібліотеками та фреймворками
+  Практикум 11: локальні сховища даних (localStorage / IndexedDB)
 
-  Обрано Vue 3: його шаблони пишуться звичайним HTML і підключаються одним
-  CDN-тегом, тоді як React у браузері без збірки вимагав би ще й Babel для
-  трансляції JSX — для навчального проєкту без Node.js Vue простіший.
+  Фреймворк — Vue 3 (практикум 10): шаблони пишуться звичайним HTML
+  і підключаються одним CDN-тегом, без збірки та Node.js.
+
+  Історія конвертацій зберігається між перезавантаженнями сторінки:
+  основне сховище — IndexedDB (об'єктне сховище history, ключ id
+  з автоінкрементом), localStorage лишається для одноразової міграції
+  вже накопичених даних і як резерв, якщо база недоступна.
 */
 
 /* ===== Налаштування запиту ===== */
@@ -30,6 +34,131 @@ const UNIT_LABELS = {
 
 // Округлює число до двох знаків після коми
 const round2 = (value) => Math.round(value * 100) / 100;
+
+/* ===== Локальні сховища даних ===== */
+
+// Ключі localStorage: самі дані та прапорець одноразової міграції
+const LS_HISTORY_KEY = 'converter-history';
+const LS_MIGRATED_KEY = 'converter-history-migrated';
+
+// Параметри бази IndexedDB за варіантом: сховище history, ключ id з автоінкрементом
+const DB_NAME = 'ConverterDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'history';
+
+// Скільки останніх записів показувати на сторінці
+const HISTORY_LIMIT = 10;
+
+// Записує історію в localStorage: зберігати можна лише рядки, тому JSON.stringify
+function saveToLocalStorage(items) {
+  try {
+    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(items));
+  } catch (error) {
+    console.error('Не вдалося записати історію в localStorage:', error);
+  }
+}
+
+// Читає історію з localStorage; пошкоджений JSON не має ламати застосунок
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_HISTORY_KEY);
+
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.error('Пошкоджені дані в localStorage:', error);
+
+    return [];
+  }
+}
+
+// Відкриває базу даних; object store створюється лише в onupgradeneeded
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      // Перевірка потрібна, щоб не створювати те саме сховище вдруге
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Додає новий запис або оновлює наявний: put працює для обох випадків
+async function addItem(item) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+
+    tx.objectStore(STORE_NAME).put(item);
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Повертає всі записи сховища однією транзакцією тільки для читання
+async function getAllItems() {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const request = tx.objectStore(STORE_NAME).getAll();
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Видаляє запис за ключем
+async function deleteItem(id) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+
+    tx.objectStore(STORE_NAME).delete(id);
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Одноразово переносить записи з localStorage у IndexedDB.
+// Повертає кількість перенесених записів; прапорець не дає повторити перенесення.
+async function migrateFromLocalStorage() {
+  if (localStorage.getItem(LS_MIGRATED_KEY) === 'true') {
+    return 0;
+  }
+
+  const stored = loadFromLocalStorage();
+  const existing = await getAllItems();
+
+  // Переносимо лише тоді, коли сховище порожнє, а в localStorage щось є
+  if (stored.length === 0 || existing.length > 0) {
+    localStorage.setItem(LS_MIGRATED_KEY, 'true');
+
+    return 0;
+  }
+
+  for (const item of stored) {
+    // id у базі генерується автоматично, тому старий ключ не переносимо
+    const { id, ...fields } = item;
+
+    await addItem(fields);
+  }
+
+  localStorage.setItem(LS_MIGRATED_KEY, 'true');
+
+  return stored.length;
+}
 
 /* ===== Компонент форми конвертації ===== */
 
@@ -184,12 +313,25 @@ const RatesList = {
 
 const HistoryList = {
   props: ['items'],
+  emits: ['remove'],
+
+  methods: {
+    // Показує лише час запису — дата зберігається повністю в timestamp
+    formatTime(timestamp) {
+      return new Date(timestamp).toLocaleString('uk-UA', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+    }
+  },
 
   template: `
     <div>
       <ul id="history-list">
         <li v-for="item in items" :key="item.id" class="history-item" :data-result="item.result">
-          {{ item.amount }} {{ item.from }} = {{ item.result }} {{ item.to }}
+          <span class="history-text">{{ item.amount }} {{ item.from }} = {{ item.result }} {{ item.to }}</span>
+          <span class="history-time">{{ formatTime(item.timestamp) }}</span>
+          <button type="button" class="history-remove" @click="$emit('remove', item.id)"
+                  title="Видалити запис">&times;</button>
         </li>
       </ul>
 
@@ -211,7 +353,8 @@ Vue.createApp({
       ratesDate: '',
       units: UNIT_LABELS,
       history: [],
-      nextId: 1,
+      storageError: '',
+      migratedCount: 0,
       loading: false,
       errorMessage: '',
       conversionType: 'currency',
@@ -223,11 +366,72 @@ Vue.createApp({
     };
   },
 
+  computed: {
+    // Останні HISTORY_LIMIT записів, найновіші згори
+    recentHistory() {
+      return [...this.history]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, HISTORY_LIMIT);
+    }
+  },
+
   methods: {
-    // Додає запис до масиву історії — Vue сам перемальовує список
-    addToHistory(entry) {
-      this.history.push({ id: this.nextId, ...entry });
-      this.nextId += 1;
+    // Перечитує історію зі сховища й оновлює стан
+    async refreshHistory() {
+      this.history = await getAllItems();
+    },
+
+    // Записує нову конвертацію у сховище і одразу оновлює список
+    async addToHistory(entry) {
+      const record = { ...entry, timestamp: Date.now() };
+
+      if (this.storageError) {
+        // База недоступна — працюємо лише з localStorage
+        record.id = Date.now();
+        this.history = [...this.history, record];
+        saveToLocalStorage(this.history);
+
+        return;
+      }
+
+      try {
+        await addItem(record);
+        await this.refreshHistory();
+      } catch (error) {
+        this.storageError = 'Не вдалося зберегти запис у базу даних.';
+        console.error(error);
+      }
+    },
+
+    // Видаляє запис історії зі сховища
+    async removeFromHistory(id) {
+      if (this.storageError) {
+        this.history = this.history.filter((item) => item.id !== id);
+        saveToLocalStorage(this.history);
+
+        return;
+      }
+
+      try {
+        await deleteItem(id);
+        await this.refreshHistory();
+      } catch (error) {
+        this.storageError = 'Не вдалося видалити запис із бази даних.';
+        console.error(error);
+      }
+    },
+
+    // Готує сховище під час запуску: міграція з localStorage і читання історії
+    async initStorage() {
+      try {
+        this.migratedCount = await migrateFromLocalStorage();
+        await this.refreshHistory();
+      } catch (error) {
+        // IndexedDB може бути недоступна, наприклад у приватному режимі
+        this.storageError = 'Базу даних недоступно — історія зберігається лише до закриття вкладки.';
+        this.history = loadFromLocalStorage();
+        console.error(error);
+      }
     },
 
     // Завантажує актуальні курси валют з API Frankfurter (https://frankfurter.dev)
@@ -280,8 +484,9 @@ Vue.createApp({
     }
   },
 
-  // Запит виконуємо після монтування застосунку
+  // Після монтування готуємо сховище й запитуємо курси
   mounted() {
+    this.initStorage();
     this.loadRates();
   }
 }).mount('#app');

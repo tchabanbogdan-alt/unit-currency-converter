@@ -410,3 +410,55 @@ footer p {
   border-color: var(--color-border-soft);
   cursor: default;
 }
+
+/* ===== Записи історії зі сховища (практикум 11) ===== */
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-text {
+  flex: 1;
+}
+
+.history-time {
+  font-size: var(--size-small);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.history-remove {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.history-remove:hover {
+  color: #A32C2C;
+  border-color: #A32C2C;
+}
+
+#storage-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  font-size: var(--size-small);
+  color: #7A1F1F;
+  background-color: #FBF0F0;
+  border-left: 4px solid #A32C2C;
+  border-radius: 6px;
+}
+
+#storage-note,
+#history-note {
+  margin: 12px 0 0;
+  font-size: var(--size-small);
+  color: var(--color-text-muted);
+}

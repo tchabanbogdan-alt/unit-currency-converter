@@ -45,7 +45,17 @@
 
     <section id="history" class="panel">
       <h2>Історія конвертацій</h2>
-      <history-list :items="history"></history-list>
+
+      <p v-if="storageError" id="storage-error">{{ storageError }}</p>
+      <p v-if="migratedCount" id="storage-note">
+        Перенесено записів із localStorage: {{ migratedCount }}
+      </p>
+
+      <history-list :items="recentHistory" @remove="removeFromHistory"></history-list>
+
+      <p v-if="history.length > recentHistory.length" id="history-note">
+        Показано останні {{ recentHistory.length }} з {{ history.length }} записів.
+      </p>
     </section>
 
     <section id="rates" class="panel">
